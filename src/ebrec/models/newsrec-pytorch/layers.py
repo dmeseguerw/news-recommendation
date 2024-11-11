@@ -71,171 +71,104 @@ class AttLayer2(nn.Module):
         return input_shape[0], input_shape[-1]
 
 
-class SelfAttention(layers.Layer):
-    """Multi-head self attention implement.
+class SelfAttention(nn.Module):
+    """Multi-head self-attention implementation in PyTorch.
 
     Args:
         multiheads (int): The number of heads.
-        head_dim (object): Dimention of each head.
-        mask_right (boolean): whether to mask right words.
+        head_dim (int): Dimension of each head.
+        mask_right (bool): Whether to mask right words.
 
     Returns:
-        object: Weighted sum after attention.
+        Tensor: Weighted sum after attention.
     """
 
-    def __init__(self, multiheads, head_dim, seed=0, mask_right=False, **kwargs):
-        """Initialization steps for AttLayer2.
-
+    def __init__(self, multiheads, head_dim, seed=0, mask_right=False):
+        """Initialization steps for SelfAttention.
+        
         Args:
             multiheads (int): The number of heads.
-            head_dim (object): Dimention of each head.
-            mask_right (boolean): whether to mask right words.
+            head_dim (int): Dimension of each head.
+            mask_right (bool): Whether to mask right words.
         """
-
+        super(SelfAttention, self).__init__()
         self.multiheads = multiheads
         self.head_dim = head_dim
         self.output_dim = multiheads * head_dim
         self.mask_right = mask_right
-        self.seed = seed
-        super(SelfAttention, self).__init__(**kwargs)
+        torch.manual_seed(seed)
 
-    def compute_output_shape(self, input_shape):
-        """Compute shape of output tensor.
+        # Define weights
+        self.WQ = nn.Parameter(torch.empty(self.output_dim, head_dim))
+        self.WK = nn.Parameter(torch.empty(self.output_dim, head_dim))
+        self.WV = nn.Parameter(torch.empty(self.output_dim, head_dim))
 
-        Returns:
-            tuple: output shape tuple.
-        """
+        # Initialize weights
+        nn.init.xavier_uniform_(self.WQ)
+        nn.init.xavier_uniform_(self.WK)
+        nn.init.xavier_uniform_(self.WV)
 
-        return (input_shape[0][0], input_shape[0][1], self.output_dim)
-
-    def build(self, input_shape):
-        """Initialization for variables in SelfAttention.
-        There are three variables in SelfAttention, i.e. WQ, WK ans WV.
-        WQ is used for linear transformation of query.
-        WK is used for linear transformation of key.
-        WV is used for linear transformation of value.
-
+    def mask_attention(self, attention, seq_len, mask_mode="add"):
+        """Applies masking to the attention scores if necessary.
+        
         Args:
-            input_shape (object): shape of input tensor.
-        """
-
-        self.WQ = self.add_weight(
-            name="WQ",
-            shape=(int(input_shape[0][-1]), self.output_dim),
-            initializer=keras.initializers.glorot_uniform(seed=self.seed),
-            trainable=True,
-        )
-        self.WK = self.add_weight(
-            name="WK",
-            shape=(int(input_shape[1][-1]), self.output_dim),
-            initializer=keras.initializers.glorot_uniform(seed=self.seed),
-            trainable=True,
-        )
-        self.WV = self.add_weight(
-            name="WV",
-            shape=(int(input_shape[2][-1]), self.output_dim),
-            initializer=keras.initializers.glorot_uniform(seed=self.seed),
-            trainable=True,
-        )
-        super(SelfAttention, self).build(input_shape)
-
-    def Mask(self, inputs, seq_len, mode="add"):
-        """Mask operation used in multi-head self attention
-
-        Args:
-            seq_len (object): sequence length of inputs.
-            mode (str): mode of mask.
-
+            attention (Tensor): The attention scores.
+            seq_len (Tensor): The sequence lengths.
+            mask_mode (str): The mode of mask, either "add" or "mul".
+        
         Returns:
-            object: tensors after masking.
+            Tensor: Masked attention scores.
         """
-
         if seq_len is None:
-            return inputs
+            return attention
         else:
-            mask = K.one_hot(indices=seq_len[:, 0], num_classes=K.shape(inputs)[1])
-            mask = 1 - K.cumsum(mask, axis=1)
+            batch_size, seq_len_q, seq_len_k = attention.size()
+            mask = torch.triu(torch.ones(seq_len_q, seq_len_k), diagonal=1).to(attention.device)
+            if mask_mode == "mul":
+                return attention * mask.unsqueeze(0)
+            elif mask_mode == "add":
+                return attention - (1 - mask.unsqueeze(0)) * 1e12
 
-            for _ in range(len(inputs.shape) - 2):
-                mask = K.expand_dims(mask, 2)
-
-            if mode == "mul":
-                return inputs * mask
-            elif mode == "add":
-                return inputs - (1 - mask) * 1e12
-
-    def call(self, QKVs):
-        """Core logic of multi-head self attention.
+    def forward(self, QKV, mask=None):
+        """Core logic of multi-head self-attention.
 
         Args:
-            QKVs (list): inputs of multi-head self attention i.e. qeury, key and value.
-
+            QKV (list): List of tensors [Q, K, V] for query, key, and value.
+            mask (Tensor, optional): Mask tensor.
+        
         Returns:
-            object: ouput tensors.
+            Tensor: Output tensor after self-attention.
         """
-        if len(QKVs) == 3:
-            Q_seq, K_seq, V_seq = QKVs
-            Q_len, V_len = None, None
-        elif len(QKVs) == 5:
-            Q_seq, K_seq, V_seq, Q_len, V_len = QKVs
-        Q_seq = K.dot(Q_seq, self.WQ)
-        Q_seq = K.reshape(
-            Q_seq, shape=(-1, K.shape(Q_seq)[1], self.multiheads, self.head_dim)
-        )
-        Q_seq = K.permute_dimensions(Q_seq, pattern=(0, 2, 1, 3))
+        Q, K, V = QKV  # Assume Q, K, V are each (batch_size, seq_len, input_dim)
 
-        K_seq = K.dot(K_seq, self.WK)
-        K_seq = K.reshape(
-            K_seq, shape=(-1, K.shape(K_seq)[1], self.multiheads, self.head_dim)
-        )
-        K_seq = K.permute_dimensions(K_seq, pattern=(0, 2, 1, 3))
+        # Linear transformations for Q, K, V
+        Q = Q @ self.WQ
+        K = K @ self.WK
+        V = V @ self.WV
 
-        V_seq = K.dot(V_seq, self.WV)
-        V_seq = K.reshape(
-            V_seq, shape=(-1, K.shape(V_seq)[1], self.multiheads, self.head_dim)
-        )
-        V_seq = K.permute_dimensions(V_seq, pattern=(0, 2, 1, 3))
-        A = tf.matmul(Q_seq, K_seq, adjoint_a=False, adjoint_b=True) / K.sqrt(
-            K.cast(self.head_dim, dtype="float32")
-        )
+        # Reshape for multi-head attention
+        Q = Q.view(Q.size(0), Q.size(1), self.multiheads, self.head_dim).permute(0, 2, 1, 3)
+        K = K.view(K.size(0), K.size(1), self.multiheads, self.head_dim).permute(0, 2, 1, 3)
+        V = V.view(V.size(0), V.size(1), self.multiheads, self.head_dim).permute(0, 2, 1, 3)
 
-        A = K.permute_dimensions(
-            A, pattern=(0, 3, 2, 1)
-        )  # A.shape=[batch_size,K_sequence_length,Q_sequence_length,self.multiheads]
+        # Scaled dot-product attention
+        attention_scores = torch.matmul(Q, K.transpose(-1, -2)) / (self.head_dim ** 0.5)
 
-        A = self.Mask(A, V_len, "add")
-        A = K.permute_dimensions(A, pattern=(0, 3, 2, 1))
-
+        # Apply mask if specified
         if self.mask_right:
-            ones = K.ones_like(A[:1, :1])
-            lower_triangular = K.tf.matrix_band_part(ones, num_lower=-1, num_upper=0)
-            mask = (ones - lower_triangular) * 1e12
-            A = A - mask
-        A = K.softmax(A)
+            mask = torch.tril(torch.ones(attention_scores.size(-2), attention_scores.size(-1))).to(attention_scores.device)
+            attention_scores = attention_scores.masked_fill(mask == 0, float('-inf'))
 
-        O_seq = tf.matmul(A, V_seq, adjoint_a=True, adjoint_b=False)
-        O_seq = K.permute_dimensions(O_seq, pattern=(0, 2, 1, 3))
+        attention_probs = F.softmax(attention_scores, dim=-1)
 
-        O_seq = K.reshape(O_seq, shape=(-1, K.shape(O_seq)[1], self.output_dim))
-        O_seq = self.Mask(O_seq, Q_len, "mul")
-        return O_seq
+        # Apply attention weights to V
+        context = torch.matmul(attention_probs, V)
 
-    def get_config(self):
-        """add multiheads, multiheads and mask_right into layer config.
-
-        Returns:
-            dict: config of SelfAttention layer.
-        """
-        config = super(SelfAttention, self).get_config()
-        config.update(
-            {
-                "multiheads": self.multiheads,
-                "head_dim": self.head_dim,
-                "mask_right": self.mask_right,
-            }
-        )
-        return config
-
+        # Concatenate heads and reshape output
+        context = context.permute(0, 2, 1, 3).contiguous().view(context.size(0), -1, self.output_dim)
+        
+        return context
+    
 
 class ComputeMasking(layers.Layer):
     """Compute if inputs contains zero value.
