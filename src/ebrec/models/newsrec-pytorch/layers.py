@@ -1,105 +1,72 @@
-import tensorflow as tf
-import tensorflow.keras as keras
-from tensorflow.keras import layers
-from tensorflow.keras import backend as K
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
-
-class AttLayer2(layers.Layer):
-    """Soft alignment attention implement.
-
+class AttLayer2(nn.Module):
+    """Soft alignment attention implementation in PyTorch.
+    
     Attributes:
-        dim (int): attention hidden dim
+        dim (int): Attention hidden dimension.
     """
 
-    def __init__(self, dim=200, seed=0, **kwargs):
-        """Initialization steps for AttLayer2.
-
+    def __init__(self, dim=200, seed=0):
+        """Initialize the attention layer.
+        
         Args:
-            dim (int): attention hidden dim
+            dim (int): Attention hidden dimension.
         """
-
+        super(AttLayer2, self).__init__()
         self.dim = dim
-        self.seed = seed
-        super(AttLayer2, self).__init__(**kwargs)
+        torch.manual_seed(seed)
 
-    def build(self, input_shape):
-        """Initialization for variables in AttLayer2
-        There are there variables in AttLayer2, i.e. W, b and q.
+        # Define weights
+        self.W = nn.Parameter(torch.empty(1, dim))
+        self.b = nn.Parameter(torch.zeros(dim))
+        self.q = nn.Parameter(torch.empty(dim, 1))
 
+        # Initialize weights
+        nn.init.xavier_uniform_(self.W) # Xavier initialization equivalent to Glorot uniform in Keras
+        nn.init.xavier_uniform_(self.q)
+
+    def forward(self, inputs, mask=None):
+        """Core implementation of soft attention.
+        
         Args:
-            input_shape (object): shape of input tensor.
-        """
-
-        assert len(input_shape) == 3
-        dim = self.dim
-        self.W = self.add_weight(
-            name="W",
-            shape=(int(input_shape[-1]), dim),
-            initializer=keras.initializers.glorot_uniform(seed=self.seed),
-            trainable=True,
-        )
-        self.b = self.add_weight(
-            name="b",
-            shape=(dim,),
-            initializer=keras.initializers.Zeros(),
-            trainable=True,
-        )
-        self.q = self.add_weight(
-            name="q",
-            shape=(dim, 1),
-            initializer=keras.initializers.glorot_uniform(seed=self.seed),
-            trainable=True,
-        )
-        super(AttLayer2, self).build(input_shape)  # be sure you call this somewhere!
-
-    def call(self, inputs, mask=None, **kwargs):
-        """Core implemention of soft attention
-
-        Args:
-            inputs (object): input tensor.
-
+            inputs (Tensor): Input tensor of shape (batch_size, seq_len, input_dim).
+            mask (Tensor, optional): Mask tensor of shape (batch_size, seq_len), with 0s for masked positions.
+        
         Returns:
-            object: weighted sum of input tensors.
+            Tensor: Weighted sum of input tensors (batch_size, input_dim).
         """
+        # Shape (batch_size, seq_len, dim)
+        attention = torch.tanh(inputs @ self.W + self.b)
+        
+        # Shape (batch_size, seq_len, 1)
+        attention = attention @ self.q
 
-        attention = K.tanh(K.dot(inputs, self.W) + self.b)
-        attention = K.dot(attention, self.q)
+        # Shape (batch_size, seq_len)
+        attention = attention.squeeze(-1)
 
-        attention = K.squeeze(attention, axis=2)
+        if mask is not None:
+            # Apply mask, set masked positions to large negative value for stable softmax
+            attention = attention.masked_fill(mask == 0, -1e10)
+        
+        # Softmax over the sequence dimension
+        attention_weights = F.softmax(attention, dim=-1)
+        attention_weights = attention_weights.unsqueeze(-1)
 
-        if mask == None:
-            attention = K.exp(attention)
-        else:
-            attention = K.exp(attention) * K.cast(mask, dtype="float32")
-
-        attention_weight = attention / (
-            K.sum(attention, axis=-1, keepdims=True) + K.epsilon()
-        )
-
-        attention_weight = K.expand_dims(attention_weight)
-        weighted_input = inputs * attention_weight
-        return K.sum(weighted_input, axis=1)
-
-    def compute_mask(self, input, input_mask=None):
-        """Compte output mask value
-
-        Args:
-            input (object): input tensor.
-            input_mask: input mask
-
-        Returns:
-            object: output mask.
-        """
-        return None
+        # Weighted sum of inputs
+        weighted_input = inputs * attention_weights
+        return weighted_input.sum(dim=1)
 
     def compute_output_shape(self, input_shape):
         """Compute shape of output tensor
-
+        
         Args:
-            input_shape (tuple): shape of input tensor.
-
+            input_shape (tuple): Shape of input tensor.
+        
         Returns:
-            tuple: shape of output tensor.
+            tuple: Shape of output tensor.
         """
         return input_shape[0], input_shape[-1]
 
