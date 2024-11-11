@@ -170,22 +170,20 @@ class SelfAttention(nn.Module):
         return context
     
 
-class ComputeMasking(layers.Layer):
-    """Compute if inputs contains zero value.
+class ComputeMasking(nn.Module):
+    """Compute if inputs contain zero values.
 
     Returns:
-        bool tensor: True for values not equal to zero.
+        Tensor: Float tensor where 1.0 represents non-zero values and 0.0 represents zero values.
     """
 
-    def __init__(self, **kwargs):
-        super(ComputeMasking, self).__init__(**kwargs)
+    def __init__(self):
+        super(ComputeMasking, self).__init__()
 
-    def call(self, inputs, **kwargs):
-        mask = K.not_equal(inputs, 0)
-        return K.cast(mask, K.floatx())
-
-    def compute_output_shape(self, input_shape):
-        return input_shape
+    def forward(self, inputs):
+        # Check if inputs are not equal to zero and cast the boolean mask to float
+        mask = (inputs != 0).float()
+        return mask
 
 
 class OverwriteMasking(layers.Layer):
