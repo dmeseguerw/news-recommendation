@@ -186,27 +186,24 @@ class ComputeMasking(nn.Module):
         return mask
 
 
-class OverwriteMasking(layers.Layer):
-    """Set values at spasific positions to zero.
+class OverwriteMasking(nn.Module):
+    """Set values at specific positions to zero based on a mask tensor.
 
     Args:
-        inputs (list): value tensor and mask tensor.
+        inputs (tuple or list): A pair containing the value tensor and the mask tensor.
 
     Returns:
-        object: tensor after setting values to zero.
+        Tensor: The value tensor with masked positions set to zero.
     """
 
-    def __init__(self, **kwargs):
-        super(OverwriteMasking, self).__init__(**kwargs)
+    def __init__(self):
+        super(OverwriteMasking, self).__init__()
 
-    def build(self, input_shape):
-        super(OverwriteMasking, self).build(input_shape)
-
-    def call(self, inputs, **kwargs):
-        return inputs[0] * K.expand_dims(inputs[1])
-
-    def compute_output_shape(self, input_shape):
-        return input_shape[0]
+    def forward(self, inputs):
+        # Expand the mask tensor along a new dimension to match the shape of the value tensor
+        values, mask = inputs
+        mask = mask.unsqueeze(-1)  # Adds a new dimension if needed
+        return values * mask
 
 
 def PersonalizedAttentivePooling(dim1, dim2, dim3, seed=0):
