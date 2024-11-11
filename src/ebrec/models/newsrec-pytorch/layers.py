@@ -206,29 +206,47 @@ class OverwriteMasking(nn.Module):
         return values * mask
 
 
-def PersonalizedAttentivePooling(dim1, dim2, dim3, seed=0):
+class PersonalizedAttentivePooling(nn.Module):
     """Soft alignment attention implement.
-    Attributes:
-        dim1 (int): first dimention of value shape.
-        dim2 (int): second dimention of value shape.
-        dim3 (int): shape of query
+
+    Args:
+        dim1 (int): First dimension of value shape.
+        dim2 (int): Second dimension of value shape.
+        dim3 (int): Shape of query.
 
     Returns:
-        object: weighted summary of inputs value.
+        Tensor: Weighted summary of the input value tensor.
     """
-    vecs_input = keras.Input(shape=(dim1, dim2), dtype="float32")
-    query_input = keras.Input(shape=(dim3,), dtype="float32")
+    def __init__(self, dim1, dim2, dim3, seed=0):
+        super(PersonalizedAttentivePooling, self).__init__()
 
-    user_vecs = layers.Dropout(0.2)(vecs_input)
-    user_att = layers.Dense(
-        dim3,
-        activation="tanh",
-        kernel_initializer=keras.initializers.glorot_uniform(seed=seed),
-        bias_initializer=keras.initializers.Zeros(),
-    )(user_vecs)
-    user_att2 = layers.Dot(axes=-1)([query_input, user_att])
-    user_att2 = layers.Activation("softmax")(user_att2)
-    user_vec = layers.Dot((1, 1))([user_vecs, user_att2])
+        self.dim1 = dim1
+        self.dim2 = dim2
+        self.dim3 = dim3
+        self.seed = seed
 
-    model = keras.Model([vecs_input, query_input], user_vec)
-    return model
+        # Dropout layer
+        self.dropout = nn.Dropout(0.2)
+
+        # Dense layer (Linear layer) with Xavier uniform initialization
+        self.dense = nn.Linear(dim2, dim3)
+        nn.init.xavier_uniform_(self.dense.weight)
+        nn.init.zeros_(self.dense.bias)
+
+    def forward(self, vecs_input, query_input):
+        # Apply dropout to the input vectors
+        user_vecs = self.dropout(vecs_input)
+
+        # Apply dense layer followed by tanh activation
+        user_att = torch.tanh(self.dense(user_vecs))
+
+        # Compute attention scores: Dot product between query_input and user_att
+        user_att2 = torch.matmul(query_input, user_att.transpose(-1, -2))
+
+        # Apply softmax to the attention scores
+        user_att2 = F.softmax(user_att2, dim=-1)
+
+        # Compute the weighted sum of the values based on the attention scores
+        user_vec = torch.matmul(user_att2, user_vecs)
+
+        return user_vec
