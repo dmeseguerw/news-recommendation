@@ -1,6 +1,7 @@
 # TODO make a notebook with it
 import torch
-from ebrec.models.newsrec.nrms_docvec import NRMSModel_docvec
+# from ebrec.models.newsrec.nrms_docvec import NRMSModel_docvec
+from ebrec.models.newsrec_pytorch.nrms import NRMSModel_docvec
 from ebrec.models.newsrec.model_config import hparams_nrms
 import numpy as np
 import torchsummary as summary
