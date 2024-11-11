@@ -3,10 +3,6 @@
 from ebrec.models.newsrec.layers import AttLayer2, SelfAttention
 import tensorflow as tf
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
 
 
 class NRMSModel_docvec:
@@ -32,9 +28,8 @@ class NRMSModel_docvec:
         self.newsencoder_units_per_layer = newsencoder_units_per_layer
 
         # SET SEED:
-        if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
+        tf.random.set_seed(seed)
+        np.random.seed(seed)
         # BUILD AND COMPILE MODEL:
         self.model, self.scorer = self._build_graph()
         data_loss = self._get_loss(self.hparams.loss)

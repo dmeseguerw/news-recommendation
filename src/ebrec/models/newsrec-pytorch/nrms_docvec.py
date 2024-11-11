@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import numpy as np
 
 
 class NRMSModel_docvec:
@@ -31,8 +32,9 @@ class NRMSModel_docvec:
         self.newsencoder_units_per_layer = newsencoder_units_per_layer
 
         # SET SEED:
-        torch.manual_seed(seed)
-        np.random.seed(seed)
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
         # BUILD AND COMPILE MODEL:
         self.model, self.scorer = self._build_graph()
         data_loss = self._get_loss(self.hparams.loss)
@@ -60,7 +62,7 @@ class NRMSModel_docvec:
             object: An optimizer.
         """
         if optimizer == "adam":
-            train_opt = optim.Adam(self.parameters(), lr=lr)
+            train_opt = torch.optim.Adam(self.model.parameters(), lr=lr)
         else:
             raise ValueError(f"this optimizer not defined {optimizer}")
         return train_opt
@@ -103,9 +105,8 @@ class NRMSModel_docvec:
 
         return UserEncoder(self.hparams, titleencoder, self.seed)
 
-    def _build_newsencoder(self, units_per_layer: list[int] = list[512, 512, 512]):
-        """THIS IS OUR IMPLEMENTATION.
-        The main function to create a news encoder.
+    def _build_newsencoder(self, units_per_layer: list[int] = [512, 512, 512]):
+        """The main function to create a news encoder.
 
         Parameters:
             units_per_layer (int): The number of neurons in each Dense layer.
@@ -135,45 +136,45 @@ class NRMSModel_docvec:
                 return self.model(x)
 
         return NewsEncoder(self.hparams, units_per_layer)
+    
+def _build_nrms(self):
+    """The main function to create NRMS's logic. The core of NRMS
+    is a user encoder and a news encoder.
 
-    def _build_nrms(self):
-        """The main function to create NRMS's logic. The core of NRMS
-        is a user encoder and a news encoder.
+    Returns:
+        object: a model used to train.
+        object: a model used to evaluate and inference.
+    """
+    class NRMS(nn.Module):
+        def __init__(self, userencoder, newsencoder):
+            super(NRMS, self).__init__()
+            self.userencoder = userencoder
+            self.newsencoder = newsencoder
 
-        Returns:
-            object: a model used to train.
-            object: a model used to evaluate and inference.
-        """
-        class NRMS(nn.Module):
-            def __init__(self, userencoder, newsencoder):
-                super(NRMS, self).__init__()
-                self.userencoder = userencoder
-                self.newsencoder = newsencoder
+        def forward(self, his_input_title, pred_input_title):
+            user_present = self.userencoder(his_input_title)
+            news_present = torch.stack([self.newsencoder(title) for title in pred_input_title], dim=1)
+            preds = torch.matmul(news_present, user_present.unsqueeze(-1)).squeeze(-1)
+            preds = torch.softmax(preds, dim=-1)
+            return preds
 
-            def forward(self, his_input_title, pred_input_title):
-                user_present = self.userencoder(his_input_title)
-                news_present = torch.stack([self.newsencoder(title) for title in pred_input_title], dim=1)
-                preds = torch.matmul(news_present, user_present.unsqueeze(-1)).squeeze(-1)
-                preds = torch.softmax(preds, dim=-1)
-                return preds
+    class Scorer(nn.Module):
+        def __init__(self, userencoder, newsencoder):
+            super(Scorer, self).__init__()
+            self.userencoder = userencoder
+            self.newsencoder = newsencoder
 
-        class Scorer(nn.Module):
-            def __init__(self, userencoder, newsencoder):
-                super(Scorer, self).__init__()
-                self.userencoder = userencoder
-                self.newsencoder = newsencoder
+        def forward(self, his_input_title, pred_input_title_one):
+            user_present = self.userencoder(his_input_title)
+            news_present_one = self.newsencoder(pred_input_title_one.squeeze(1))
+            pred_one = torch.sigmoid(torch.matmul(news_present_one, user_present))
+            return pred_one
 
-            def forward(self, his_input_title, pred_input_title_one):
-                user_present = self.userencoder(his_input_title)
-                news_present_one = self.newsencoder(pred_input_title_one.squeeze(1))
-                pred_one = torch.sigmoid(torch.matmul(news_present_one, user_present))
-                return pred_one
+    titleencoder = self._build_newsencoder(units_per_layer=self.newsencoder_units_per_layer)
+    self.userencoder = self._build_userencoder(titleencoder)
+    self.newsencoder = titleencoder
 
-        titleencoder = self._build_newsencoder(units_per_layer=self.newsencoder_units_per_layer)
-        self.userencoder = self._build_userencoder(titleencoder)
-        self.newsencoder = titleencoder
+    model = NRMS(self.userencoder, self.newsencoder)
+    scorer = Scorer(self.userencoder, self.newsencoder)
 
-        model = NRMS(self.userencoder, self.newsencoder)
-        scorer = Scorer(self.userencoder, self.newsencoder)
-
-        return model, scorer
+    return model, scorer
