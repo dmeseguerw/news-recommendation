@@ -1,5 +1,8 @@
+'''This file contains the dataloader.py original code commented out along with the new pytorch equivalent implementation 
+and notes on the changes.'''
+
 from dataclasses import dataclass, field
-import tensorflow as tf
+#import tensorflow as tf
 import polars as pl
 import numpy as np
 
@@ -15,9 +18,15 @@ from ebrec.utils._constants import (
     DEFAULT_USER_COL,
 )
 
+#---NEW CODE---
+import torch
+from torch.utils.data import Dataset
+#--------------
+
 
 @dataclass
-class NewsrecDataLoader(tf.keras.utils.Sequence):
+#class NewsrecDataLoader(tf.keras.utils.Sequence):
+class NewsrecDataLoader(Dataset):
     """
     A DataLoader for news recommendation.
     """
@@ -31,7 +40,8 @@ class NewsrecDataLoader(tf.keras.utils.Sequence):
     inview_col: str = DEFAULT_INVIEW_ARTICLES_COL
     labels_col: str = DEFAULT_LABELS_COL
     user_col: str = DEFAULT_USER_COL
-    kwargs: field(default_factory=dict) = None
+#    kwargs: field(default_factory=dict) = None
+    kwargs: dict = field(default_factory=dict)
 
     def __post_init__(self):
         """
@@ -42,13 +52,16 @@ class NewsrecDataLoader(tf.keras.utils.Sequence):
         )
         self.unknown_index = [0]
         self.X, self.y = self.load_data()
-        if self.kwargs is not None:
+#        if self.kwargs is not None:
+        if self.kwargs:
             self.set_kwargs(self.kwargs)
 
     def __len__(self) -> int:
-        return int(np.ceil(len(self.X) / float(self.batch_size)))
+#        return int(np.ceil(len(self.X) / float(self.batch_size)))
+        return len(self.X) # ???
 
-    def __getitem__(self):
+#    def __getitem__(self):
+    def __getitem__(self, idx):
         raise ValueError("Function '__getitem__' needs to be implemented.")
 
     def load_data(self) -> tuple[pl.DataFrame, pl.DataFrame]:
@@ -80,7 +93,8 @@ class NRMSDataLoader(NewsrecDataLoader):
             drop_nulls=False,
         )
 
-    def __getitem__(self, idx) -> tuple[tuple[np.ndarray], np.ndarray]:
+#    def __getitem__(self, idx) -> tuple[tuple[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx: int) -> tuple[tuple[torch.Tensor], torch.Tensor]:
         """
         his_input_title:    (samples, history_size, document_dimension)
         pred_input_title:   (samples, npratio, document_dimension)
@@ -116,6 +130,12 @@ class NRMSDataLoader(NewsrecDataLoader):
             pred_input_title = np.squeeze(pred_input_title, axis=2)
 
         his_input_title = np.squeeze(his_input_title, axis=2)
+        #-----NEW CODE----- ---> MAYBE DO A FUNCTION TO BE USED IN BOTH THE PRETRANSFORM AND REGULAR ONE??
+        # Convert outputs to torch.Tensor
+        his_input_title = torch.tensor(his_input_title, dtype=torch.float32)
+        pred_input_title = torch.tensor(pred_input_title, dtype=torch.float32)
+        batch_y = torch.tensor(batch_y, dtype=torch.float32)
+        #------------------
         return (his_input_title, pred_input_title), batch_y
 
 
@@ -143,7 +163,8 @@ class NRMSDataLoaderPretransform(NewsrecDataLoader):
             drop_nulls=False,
         )
 
-    def __getitem__(self, idx) -> tuple[tuple[np.ndarray], np.ndarray]:
+#    def __getitem__(self, idx) -> tuple[tuple[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx: int) -> tuple[tuple[torch.Tensor], torch.Tensor]:
         """
         his_input_title:    (samples, history_size, document_dimension)
         pred_input_title:   (samples, npratio, document_dimension)
@@ -177,9 +198,17 @@ class NRMSDataLoaderPretransform(NewsrecDataLoader):
             pred_input_title = np.squeeze(pred_input_title, axis=2)
 
         his_input_title = np.squeeze(his_input_title, axis=2)
+        #-----NEW CODE----- ---> MAYBE DO A FUNCTION TO BE USED IN BOTH THE PRETRANSFORM AND REGULAR ONE??
+        # Convert outputs to torch.Tensor
+        his_input_title = torch.tensor(his_input_title, dtype=torch.float32)
+        pred_input_title = torch.tensor(pred_input_title, dtype=torch.float32)
+        batch_y = torch.tensor(batch_y, dtype=torch.float32)
+        #------------------
         return (his_input_title, pred_input_title), batch_y
 
 
+# This code is not used for NRMS case
+'''
 @dataclass(kw_only=True)
 class LSTURDataLoader(NewsrecDataLoader):
     """
@@ -417,3 +446,4 @@ class NAMLDataLoader(NewsrecDataLoader):
             pred_input_vert,
             pred_input_subvert,
         ), batch_y
+'''
