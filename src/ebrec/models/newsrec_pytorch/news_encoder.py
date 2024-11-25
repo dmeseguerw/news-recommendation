@@ -14,7 +14,7 @@ class NewsEncoder(nn.Module):
     def forward(self, sequences_input_title):
         embedded_sequences = self.embedding(sequences_input_title)
         y = self.dropout(embedded_sequences)
-        y = self.multihead_attention(y)
+        y = self.multihead_attention(y, y, y)
         y = self.dropout(y)
         pred_title = self.attention(y)
         return pred_title
