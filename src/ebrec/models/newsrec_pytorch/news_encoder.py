@@ -3,7 +3,7 @@ import torch.nn as nn
 from ebrec.models.newsrec_pytorch.layers import AttLayer2, SelfAttention
 
 class NewsEncoder(nn.Module):
-    def __init__(self, word2vec_embedding, hparams_nrms, seed):
+    def __init__(self, hparams_nrms, word2vec_embedding, seed):
         super(NewsEncoder, self).__init__()
         self.embedding = nn.Embedding.from_pretrained(word2vec_embedding, freeze=False)
         self.dropout = nn.Dropout(hparams_nrms.dropout)
@@ -13,8 +13,12 @@ class NewsEncoder(nn.Module):
         
     def forward(self, sequences_input_title):
         embedded_sequences = self.embedding(sequences_input_title)
+        print(embedded_sequences.shape)
         y = self.dropout(embedded_sequences)
+        # print(y.shape)
         y = self.multihead_attention(y, y, y)
-        y = self.dropout(y)
+        # print(y.shape)
+        y = self.dropout(y[0])
+        # print(y.shape)
         pred_title = self.attention(y)
         return pred_title

@@ -11,7 +11,7 @@ class AttLayer2(nn.Module):
         dim (int): attention hidden dim
     """
 
-    def __init__(self, dim=200, seed=0):
+    def __init__(self, dim=768, seed=0): # PARCHE
         """Initialization steps for AttLayer2.
 
         Args:

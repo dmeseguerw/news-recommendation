@@ -22,10 +22,10 @@ class UserEncoder(nn.Module):
         click_title_presents = click_title_presents.view(batch_size, history_size, -1)  # Shape: (batch_size, history_size, hidden_dim)
 
         # Self-attention over the historical clicked news representations
-        y = self.multihead_attention(click_title_presents*3)  # Shape: (batch_size, history_size, hidden_dim)
+        y = self.multihead_attention(click_title_presents, click_title_presents, click_title_presents)  # Shape: (batch_size, history_size, hidden_dim)
         
         # Dropout
-        y = self.dropout(y)
+        y = self.dropout(y[0])
         
         # Attention layer for user representation
         user_present = self.additive_attention(y) 
