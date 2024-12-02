@@ -9,8 +9,8 @@ class NRMSModel(nn.Module):
         self.news_encoder = NewsEncoder(hparams_nrms, word2vec_embedding, seed)
         self.candidate_encoder = NewsEncoder(hparams_nrms, word2vec_embedding, seed)
         self.user_encoder = UserEncoder(self.news_encoder, hparams_nrms, seed)
-        print("News encoder: ", self.news_encoder)
-        print("User encoder: ", self.user_encoder)
+        # print("News encoder: ", self.news_encoder)
+        # print("User encoder: ", self.user_encoder)
         self.hparams_nrms = hparams_nrms
     
     def forward(self, his_input_title, pred_input_title):

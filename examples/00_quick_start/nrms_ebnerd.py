@@ -215,11 +215,11 @@ for epoch in range(num_epochs):
         pred_input_title = torch.tensor(pred_input_title, dtype=torch.long).to(device)
         labels = torch.tensor(labels, dtype=torch.long).to(device)
         labels = labels.view(-1)
-        logger.info("Input shape for user encoder:", his_input_title.shape)
-        logger.info("Input shape for news encoder:", pred_input_title.shape)
+        logger.info(f"Input shape for user encoder: {his_input_title.shape}")
+        logger.info(f"Input shape for news encoder: {pred_input_title.shape}")
         optimizer.zero_grad()  # Zero the gradients
         outputs = nrms(his_input_title, pred_input_title)  # Forward pass
-        logger.info(outputs)
+        logger.info(f"Outputs: {outputs}")
         loss = loss_fn(outputs.view(-1), labels.float())  # Compute the loss
         loss.backward()  # Backward pass
         optimizer.step()  # Update the parameters
