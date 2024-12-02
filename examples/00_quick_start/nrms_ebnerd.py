@@ -79,7 +79,7 @@ def ebnerd_from_path(path: Path, history_size: int = 30) -> pl.DataFrame:
 # We sample a few just to get started. For testset we just make up a dummy column with 0 and 1 - this is not the true labels.
 
 # %%
-PATH = Path("~/ebnerd_data").expanduser()
+PATH = Path("./ebnerd_data").expanduser()
 print(PATH)
 DATASPLIT = "ebnerd_demo"
 DUMP_DIR = PATH.joinpath("downloads1")

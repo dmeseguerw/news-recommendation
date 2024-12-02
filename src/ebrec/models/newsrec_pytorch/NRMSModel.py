@@ -21,14 +21,14 @@ class NRMSModel(nn.Module):
         pred_input_title_flat = pred_input_title.view(-1, title_size)
         news_present = self.candidate_encoder(pred_input_title_flat)
         news_present = news_present.view(batch_size, npratio, -1)
-        print("User present shape: ", user_present_unsqueezed.shape)
-        print("News present shape: ", news_present.shape)
+        # print("User present shape: ", user_present_unsqueezed.shape)
+        # print("News present shape: ", news_present.shape)
         
         # apply inner product between user_present and news_present
         preds = torch.matmul(user_present_unsqueezed, news_present.transpose(1, 2)).squeeze(1)
-        print("Preds after fot shape: ", preds.shape)
+        # print("Preds after fot shape: ", preds.shape)
         # apply softmax to get probability
         preds = torch.softmax(preds, dim=1)
-        print("Preds shape: ", preds.shape)
+        # print("Preds shape: ", preds.shape)
 
         return preds

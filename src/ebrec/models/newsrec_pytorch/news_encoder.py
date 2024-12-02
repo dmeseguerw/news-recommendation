@@ -13,14 +13,14 @@ class NewsEncoder(nn.Module):
         
     def forward(self, sequences_input_title):
         embedded_sequences = self.embedding(sequences_input_title)
-        print("embedded sequence size: ", embedded_sequences.shape)
+        # print("embedded sequence size: ", embedded_sequences.shape)
         y = self.dropout(embedded_sequences)
         # print(y.shape)
         y = self.multihead_attention(y, y, y)
-        print("News encoder multihead attention output: ", y[0].shape)
+        # print("News encoder multihead attention output: ", y[0].shape)
         # print(y.shape)
         y = self.dropout(y[0])
         # print(y.shape)
         pred_title = self.attention(y)
-        print("pred title after attention in news encoder: ", pred_title.shape)
+        # print("pred title after attention in news encoder: ", pred_title.shape)
         return pred_title
