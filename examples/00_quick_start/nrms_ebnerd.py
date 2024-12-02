@@ -196,7 +196,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 word2vec_embedding = torch.tensor(word2vec_embedding, dtype=torch.float32).to(device)
-nrms = NRMSModel(hparams_nrms=hparams_nrms, word2vec_embedding=word2vec_embedding, seed=42)
+nrms = NRMSModel(hparams_nrms=hparams_nrms, word2vec_embedding=word2vec_embedding, seed=42).to(device)
 optimizer = torch.optim.Adam(nrms.parameters(), lr=1e-3)
 loss_fn = nn.BCEWithLogitsLoss()
 writer = SummaryWriter("./logs")
