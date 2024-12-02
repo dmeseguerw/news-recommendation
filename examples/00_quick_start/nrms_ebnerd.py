@@ -196,12 +196,14 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 word2vec_embedding = torch.tensor(word2vec_embedding, dtype=torch.float32).to(device)
-print(word2vec_embedding.shape)
 nrms = NRMSModel(hparams_nrms=hparams_nrms, word2vec_embedding=word2vec_embedding, seed=42)
-print(nrms)
 optimizer = torch.optim.Adam(nrms.parameters(), lr=1e-3)
 loss_fn = nn.BCEWithLogitsLoss()
 writer = SummaryWriter("./logs")
+import logging
+
+logging.basicConfig(filename='training.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+logger = logging.getLogger()
 
 # Training loop
 num_epochs = 100
@@ -213,10 +215,11 @@ for epoch in range(num_epochs):
         pred_input_title = torch.tensor(pred_input_title, dtype=torch.long).to(device)
         labels = torch.tensor(labels, dtype=torch.long).to(device)
         labels = labels.view(-1)
-        print("Input shape for user encoder:", his_input_title.shape)
-        print("Input shape for news encoder:", pred_input_title.shape)
+        logger.info("Input shape for user encoder:", his_input_title.shape)
+        logger.info("Input shape for news encoder:", pred_input_title.shape)
         optimizer.zero_grad()  # Zero the gradients
         outputs = nrms(his_input_title, pred_input_title)  # Forward pass
+        logger.info(outputs)
         loss = loss_fn(outputs.view(-1), labels.float())  # Compute the loss
         loss.backward()  # Backward pass
         optimizer.step()  # Update the parameters
