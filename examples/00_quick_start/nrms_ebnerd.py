@@ -178,7 +178,7 @@ train_dataloader = NRMSDataLoader(
     unknown_representation="zeros",
     history_column=DEFAULT_HISTORY_ARTICLE_ID_COL,
     eval_mode=False,
-    batch_size=16,
+    batch_size=4,
 )
 val_dataloader = NRMSDataLoader(
     behaviors=df_validation,
@@ -186,7 +186,7 @@ val_dataloader = NRMSDataLoader(
     unknown_representation="zeros",
     history_column=DEFAULT_HISTORY_ARTICLE_ID_COL,
     eval_mode=True,
-    batch_size=16,
+    batch_size=4,
 )
 
 # %% [markdown]
@@ -230,8 +230,8 @@ for epoch in range(num_epochs):
         loss = loss_fn(outputs.view(-1), labels.float())  # Compute the loss
         loss.backward()  # Backward pass
         optimizer.step()  # Update the parameters
-
         running_loss += loss.item()
+        
         
         # Detach tensors immediately after use to save memory
         his_input_title = his_input_title.detach()
@@ -283,9 +283,9 @@ for epoch in range(num_epochs):
     writer.add_scalar("Accuracy/validation", accuracy, epoch)
 
 # Save the model weights
-MODEL_NAME = "NRMS"
-MODEL_WEIGHTS = f"downloads/data/state_dict/{MODEL_NAME}/weights"
-torch.save(nrms.state_dict(), MODEL_WEIGHTS)
+# MODEL_NAME = "NRMS"
+# MODEL_WEIGHTS = f"downloads/data/state_dict/{MODEL_NAME}/weights"
+# torch.save(nrms.state_dict(), MODEL_WEIGHTS)
             
         
     
