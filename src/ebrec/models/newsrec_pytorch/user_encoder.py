@@ -7,7 +7,7 @@ class UserEncoder(nn.Module):
     def __init__(self, news_encoder, hparams_nrms, seed):
         super(UserEncoder, self).__init__()
         self.news_encoder = news_encoder
-        self.multihead_attention = nn.MultiheadAttention(hparams_nrms.head_dim, hparams_nrms.head_num)
+        self.multihead_attention = nn.MultiheadAttention(hparams_nrms.embedded_dimension, hparams_nrms.head_num)
         self.additive_attention = AttLayer2(hparams_nrms.attention_hidden_dim, seed)
         self.dropout = nn.Dropout(hparams_nrms.dropout)
         

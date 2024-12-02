@@ -71,9 +71,10 @@ class hparams_nrms:
     title_size: int = DEFAULT_TITLE_SIZE
     history_size: int = 50
     # MODEL ARCHITECTURE
-    head_num: int = DEFAULT_DOCUMENT_SIZE
-    head_dim: int = DEFAULT_DOCUMENT_SIZE # Modified from 20 to DEFAULT_DOCUMENT_SIZE
+    head_num: int = 24
+    head_dim: int = 24 # Modified from 20 to DEFAULT_DOCUMENT_SIZE
     attention_hidden_dim: int = DEFAULT_DOCUMENT_SIZE
+    embedded_dimension: int = 768
     # MODEL OPTIMIZER:
     optimizer: str = "adam"
     loss: str = "cross_entropy_loss"

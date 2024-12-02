@@ -8,7 +8,7 @@ class NewsEncoder(nn.Module):
         self.embedding = nn.Embedding.from_pretrained(word2vec_embedding, freeze=False)
         self.dropout = nn.Dropout(hparams_nrms.dropout)
         # self.self_attention = SelfAttention(hparams_nrms.head_num, hparams_nrms.head_dim, seed)
-        self.multihead_attention = nn.MultiheadAttention(hparams_nrms.head_dim, hparams_nrms.head_num)
+        self.multihead_attention = nn.MultiheadAttention(hparams_nrms.embedded_dimension, hparams_nrms.head_num)
         self.attention = AttLayer2(hparams_nrms.attention_hidden_dim, seed)
         
     def forward(self, sequences_input_title):
