@@ -57,7 +57,7 @@ from ebrec.models.newsrec_pytorch import NRMSModel
 # ## Load dataset
 
 # %%
-def ebnerd_from_path(path: Path, history_size: int = 10) -> pl.DataFrame:
+def ebnerd_from_path(path: Path, history_size: int = 30) -> pl.DataFrame:
     """
     Load ebnerd - function
     """
@@ -178,7 +178,7 @@ train_dataloader = NRMSDataLoader(
     unknown_representation="zeros",
     history_column=DEFAULT_HISTORY_ARTICLE_ID_COL,
     eval_mode=False,
-    batch_size=16,
+    batch_size=4,
 )
 val_dataloader = NRMSDataLoader(
     behaviors=df_validation,
@@ -186,7 +186,7 @@ val_dataloader = NRMSDataLoader(
     unknown_representation="zeros",
     history_column=DEFAULT_HISTORY_ARTICLE_ID_COL,
     eval_mode=True,
-    batch_size=16,
+    batch_size=4,
 )
 
 # %% [markdown]
@@ -197,7 +197,7 @@ val_dataloader = NRMSDataLoader(
 import torch
 import torch.nn as nn
 epoch = 0
-num_epochs = 10
+num_epochs = 1
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f">> Using device: {device}")
@@ -266,6 +266,10 @@ for epoch in range(num_epochs):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             # Detach tensors immediately after use to save memory
+            his_input_title = his_input_title.detach()
+            pred_input_title = pred_input_title.detach()
+            labels = labels.detach()
+            outputs = outputs.detach()
             del his_input_title, pred_input_title, labels, outputs, loss
             torch.cuda.empty_cache()  # Clear unused GPU memory
             
