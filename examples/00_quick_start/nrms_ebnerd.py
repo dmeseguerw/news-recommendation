@@ -287,31 +287,31 @@ for epoch in range(num_epochs):
     
 
 # %%
-MODEL_NAME = "NRMS"
-LOG_DIR = f"downloads/runs/{MODEL_NAME}"
-MODEL_WEIGHTS = f"downloads/data/state_dict/{MODEL_NAME}/weights"
+# MODEL_NAME = "NRMS"
+# LOG_DIR = f"downloads/runs/{MODEL_NAME}"
+# MODEL_WEIGHTS = f"downloads/data/state_dict/{MODEL_NAME}/weights"
 
-# CALLBACKS
-# tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=LOG_DIR, histogram_freq=1)
-# early_stopping = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=2)
-# modelcheckpoint = tf.keras.callbacks.ModelCheckpoint(
-#     filepath=MODEL_WEIGHTS, save_best_only=True, save_weights_only=True, verbose=1
+# # CALLBACKS
+# # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=LOG_DIR, histogram_freq=1)
+# # early_stopping = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=2)
+# # modelcheckpoint = tf.keras.callbacks.ModelCheckpoint(
+# #     filepath=MODEL_WEIGHTS, save_best_only=True, save_weights_only=True, verbose=1
+# # )
+
+# hparams_nrms.history_size = HISTORY_SIZE
+
+
+# model = NRMSModel(
+#     hparams=hparams_nrms,
+#     word2vec_embedding=word2vec_embedding,
+#     seed=42,
 # )
-
-hparams_nrms.history_size = HISTORY_SIZE
-
-
-model = NRMSModel(
-    hparams=hparams_nrms,
-    word2vec_embedding=word2vec_embedding,
-    seed=42,
-)
-hist = model.model.fit(
-    train_dataloader,
-    validation_data=val_dataloader,
-    epochs=1,
-    # callbacks=[tensorboard_callback, early_stopping, modelcheckpoint],
-)
+# hist = model.model.fit(
+#     train_dataloader,
+#     validation_data=val_dataloader,
+#     epochs=1,
+#     # callbacks=[tensorboard_callback, early_stopping, modelcheckpoint],
+# )
 # Uncomment the following line if you have pre-trained weights
 # _ = model.model.load_weights(filepath=MODEL_WEIGHTS)
 
@@ -319,48 +319,48 @@ hist = model.model.fit(
 # # Example how to compute some metrics:
 
 # %%
-pred_validation = model.scorer.predict(val_dataloader)
+# pred_validation = model.scorer.predict(val_dataloader)
 
 # %% [markdown]
 # ## Add the predictions to the dataframe
 
 # %%
-df_validation = add_prediction_scores(df_validation, pred_validation.tolist()).pipe(
-    add_known_user_column, known_users=df_train[DEFAULT_USER_COL]
-)
-df_validation.head(2)
+# df_validation = add_prediction_scores(df_validation, pred_validation.tolist()).pipe(
+#     add_known_user_column, known_users=df_train[DEFAULT_USER_COL]
+# )
+# df_validation.head(2)
 
 # %% [markdown]
 # ### Compute metrics
 
 # %%
-metrics = MetricEvaluator(
-    labels=df_validation["labels"].to_list(),
-    predictions=df_validation["scores"].to_list(),
-    metric_functions=[AucScore(), MrrScore(), NdcgScore(k=5), NdcgScore(k=10)],
-)
-metrics.evaluate()
+# metrics = MetricEvaluator(
+#     labels=df_validation["labels"].to_list(),
+#     predictions=df_validation["scores"].to_list(),
+#     metric_functions=[AucScore(), MrrScore(), NdcgScore(k=5), NdcgScore(k=10)],
+# )
+# metrics.evaluate()
 
 # %% [markdown]
 # ## Make submission file
 
 # %%
-df_validation = df_validation.with_columns(
-    pl.col("scores")
-    .map_elements(lambda x: list(rank_predictions_by_score(x)))
-    .alias("ranked_scores")
-)
-df_validation.head(2)
+# df_validation = df_validation.with_columns(
+#     pl.col("scores")
+#     .map_elements(lambda x: list(rank_predictions_by_score(x)))
+#     .alias("ranked_scores")
+# )
+# df_validation.head(2)
 
 # %% [markdown]
 # This is using the validation, simply add the testset to your flow.
 
 # %%
-write_submission_file(
-    impression_ids=df_validation[DEFAULT_IMPRESSION_ID_COL],
-    prediction_scores=df_validation["ranked_scores"],
-    path="downloads/predictions.txt",
-)
+# write_submission_file(
+#     impression_ids=df_validation[DEFAULT_IMPRESSION_ID_COL],
+#     prediction_scores=df_validation["ranked_scores"],
+#     path="downloads/predictions.txt",
+# )
 
 # %% [markdown]
 # # DONE 🚀
