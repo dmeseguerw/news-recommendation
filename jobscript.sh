@@ -37,5 +37,6 @@ nvidia-smi
 #module load cuda/11.6
 
 #/appl/cuda/11.6.0/samples/bin/x86_64/linux/release/deviceQuery
-python3 hpctest.py "$UNO" "$DOS" > outputtest.txt
+#python3 hpctest.py "$UNO" "$DOS" > outputtest.txt
 #hpctest.py "${UNO}" "${DOS}" > outputtest.txt
+python3 hpctest.py "$1" "$2" > outputtest.txt
