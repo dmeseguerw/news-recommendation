@@ -26,13 +26,9 @@
 #BSUB -e gpu_%J.err
 # -- end of LSF options --
 
-# Accept inputs dynamically from command line arguments to the job script
-UNO=${1}
-DOS=${2}
-
 nvidia-smi
 # Load the cuda module
 #module load cuda/11.6
 
 #/appl/cuda/11.6.0/samples/bin/x86_64/linux/release/deviceQuery
-hpctest.py ${UNO} ${DOS} > outputtest.txt
+hpctest.py "${UNO}" "${DOS}" > outputtest.txt
