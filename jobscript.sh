@@ -26,6 +26,10 @@
 #BSUB -e gpu_%J.err
 # -- end of LSF options --
 
+# Export variables
+export UNO
+export DOS
+
 nvidia-smi
 # Load the cuda module
 #module load cuda/11.6
