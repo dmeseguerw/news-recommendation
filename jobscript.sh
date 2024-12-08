@@ -27,10 +27,10 @@
 # -- end of LSF options --
 
 # Set variables (ensure they are set dynamically when submitting the job)
-UNO=${UNO:-1}  # Default to 1 if UNO is not set
-DOS=${DOS:-2}  # Default to 2 if DOS is not set
-export UNO
-export DOS
+#UNO=${UNO:-1}  # Default to 1 if UNO is not set
+#DOS=${DOS:-2}  # Default to 2 if DOS is not set
+#export UNO
+#export DOS
 
 nvidia-smi
 # Load the cuda module
