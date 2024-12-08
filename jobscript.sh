@@ -26,11 +26,17 @@
 #BSUB -e gpu_%J.err
 # -- end of LSF options --
 
+# Debug: Check the values of UNO and DOS
+echo "Before exporting: UNO=${UNO}, DOS=${DOS}" >> debug.log
+
 # Set variables (ensure they are set dynamically when submitting the job)
 #UNO=${UNO:-1}  # Default to 1 if UNO is not set
 #DOS=${DOS:-2}  # Default to 2 if DOS is not set
-#export UNO
-#export DOS
+export UNO
+export DOS
+
+# Debug: Confirm export worked
+echo "After exporting: UNO=${UNO}, DOS=${DOS}" >> debug.log
 
 nvidia-smi
 # Load the cuda module
@@ -39,4 +45,4 @@ nvidia-smi
 #/appl/cuda/11.6.0/samples/bin/x86_64/linux/release/deviceQuery
 #python3 hpctest.py "$UNO" "$DOS" > outputtest.txt
 #hpctest.py "${UNO}" "${DOS}" > outputtest.txt
-python3 hpctest.py "$1" "$2" > outputtest.txt
+python3 hpctest.py "$UNO" "$DOS" > outputtest.txt
