@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 uno = 1
 dos = 2
 
